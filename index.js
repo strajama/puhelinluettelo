@@ -52,9 +52,37 @@ app.use(express.static('dist'))
       return id
   }
 
+  const mongoose = require('mongoose')
+  
+  if (process.argv.length<3) {
+    console.log('give password as argument')
+    process.exit(1)
+  }
+  
+  const password = process.argv[2]
+  
+  const url =
+    `mongodb+srv://strajama:${password}@cluster0.ev1j9.mongodb.net/?retryWrites=true&w=majority&appName=Cluster0`
+  
+  mongoose.set('strictQuery', false)
+  mongoose.connect(url)
+  
+  const personSchema = new mongoose.Schema({
+    name: String,
+    number: String,
+  })
+  
+  const Person = mongoose.model('Person', personSchema)
+
+  // app.get('/api/persons', (request, response) => {
+  //   response.json(persons)
+  // } )
+
   app.get('/api/persons', (request, response) => {
-    response.json(persons)
-  } )
+    Person.find({}).then(persons => {
+      response.json(persons)
+    })
+  })
 
   app.get('/info', (request, response) => {   
     response.send(`<p>Phonebook has info for ${persons.length} people</p>
