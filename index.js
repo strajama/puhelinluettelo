@@ -25,34 +25,6 @@ const cors = require('cors')
 app.use(cors())
 
 app.use(express.static('dist'))
-  
-  // let persons =   [
-  //     {
-  //       "name": "Arto Hellas",
-  //       "number": "040-123456",
-  //       "id": "1"
-  //     },
-  //     {
-  //       "name": "Ada Lovelace",
-  //       "number": "39-44-5323523",
-  //       "id": "2"
-  //     },
-  //     {
-  //       "name": "Dan Abramov",
-  //       "number": "12-43-234345",
-  //       "id": "3"
-  //     },
-  //     {
-  //       "name": "Mary Poppendieck",
-  //       "number": "39-23-6423122",
-  //       "id": "4"
-  //     }
-  //   ]
-
-    const generateIdPerson = () => {
-      const id = Math.random().toString(36).substring(2, 9) + Math.random().toString(36).substring(2, 9)  
-      return id
-  }
 
   app.get('/api/persons', (request, response) => {
     Person.find({}).then(persons => {
@@ -91,25 +63,25 @@ app.use(express.static('dist'))
       name: body.name,
       number: body.number,
     }
-    Person.findByIdAndUpdate(request.params.id, person, { new: true })
+    Person.findByIdAndUpdate(request.params.id, person, { new: true, runValidators: true, context: 'query'  })
     .then(updatedPerson => {
       response.json(updatedPerson)
     })
     .catch(error => next(error))
   }
 
-  app.post('/api/persons', (request, response) => {
+  app.post('/api/persons', (request, response, next) => {
     const body = request.body
-    if (!body.name) {
-      return response.status(400).json({ 
-        error: 'name missing' 
-      })
-    }
-    if (!body.number) {
-      return response.status(400).json({ 
-        error: 'number missing' 
-      })
-    }
+    // if (!body.name) {
+    //   return response.status(400).json({ 
+    //     error: 'name missing' 
+    //   })
+    // }
+    // if (!body.number) {
+    //   return response.status(400).json({ 
+    //     error: 'number missing' 
+    //   })
+    // }
     Person.findOne({ name: body.name }).then(existingPerson => {
       if (existingPerson) {
         updatePerson(request, response, next)
@@ -122,25 +94,13 @@ app.use(express.static('dist'))
         person.save().then(savedPerson => { 
           response.json(savedPerson)
         })
+        .catch(error => next(error))
       }
 
     }) 
   })
 
   app.put('/api/persons/:id', (request, response, next) => {
-    // const body = request.body
-  
-    // const person = {
-    //   name: body.name,
-    //   number: body.number,
-    // }
-  
-  //   Person.findByIdAndUpdate(request.params.id, person, { new: true })
-  //     .then(updatedPerson => {
-  //       response.json(updatedPerson)
-  //     })
-  //     .catch(error => next(error))
-  // })
 updatePerson(request, response, next)
   }  )
 
@@ -155,8 +115,9 @@ updatePerson(request, response, next)
   
     if (error.name === 'CastError') {
       return response.status(400).send({ error: 'malformatted id' })
+    }  else if (error.name === 'ValidationError') {
+      return response.status(400).json({ error: error.message })
     }
-  
     next(error)
   }
   
